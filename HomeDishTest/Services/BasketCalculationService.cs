@@ -28,17 +28,21 @@ namespace HomeDishTest.Services
                     if (product == null) break;
 
                     //calculate discount for each special product
-                    specialProduct.DisountedPrice = (product.Quantity - specialProduct.Quantity) * product.Price;
+                    specialProduct.DisountedPrice = specialProduct.Quantity * product.Price;
 
                     //calculate price with discount for each offer
                     special.TotalDisountedPrice += specialProduct.DisountedPrice;
 
-
                 }
 
             }
-            minimumGrandTotal = basket.Specials.Min(x => x.TotalDisountedPrice);
-            return minimumGrandTotal;
+            var specialWithMinimumDiscount = basket.Specials.OrderBy(x => x.TotalDisountedPrice).FirstOrDefault();
+            var excludedMiniumSpecialProducts = basket.Products
+                .Where(p => specialWithMinimumDiscount.Products.All(sp => sp.Name != p.Name));
+            var totalPrice = excludedMiniumSpecialProducts.Sum(x => x.Price * x.Quantity);
+
+            //minimumGrandTotal = basket.Specials.Min(x => x.TotalDisountedPrice);
+            return (totalPrice + specialWithMinimumDiscount.TotalDisountedPrice);
 
         }
     }
