@@ -12,9 +12,6 @@ namespace HomeDishTest.Models
         public int Total { get; set; }
 
         [JsonIgnore]
-        public int SumOfQuantities => Products.Sum(x => x.Quantity);
-
-        [JsonIgnore]
         public double TotalDisountedPrice { get; set; }
 
     }

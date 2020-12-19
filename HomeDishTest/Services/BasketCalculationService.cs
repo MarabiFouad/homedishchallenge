@@ -16,8 +16,8 @@ namespace HomeDishTest.Services
         }
         public double MinimumGrandTotal(Basket basket)
         {
+            
             if (basket == null) throw new ApiException("Basket cannot be empty.");
-            var minimumGrandTotal = 0.0;
             foreach (var special in basket.Specials)
             {
                 foreach (var specialProduct in special.Products)
@@ -40,8 +40,6 @@ namespace HomeDishTest.Services
             var excludedMiniumSpecialProducts = basket.Products
                 .Where(p => specialWithMinimumDiscount.Products.All(sp => sp.Name != p.Name));
             var totalPrice = excludedMiniumSpecialProducts.Sum(x => x.Price * x.Quantity);
-
-            //minimumGrandTotal = basket.Specials.Min(x => x.TotalDisountedPrice);
             return (totalPrice + specialWithMinimumDiscount.TotalDisountedPrice);
 
         }
