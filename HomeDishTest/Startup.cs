@@ -28,9 +28,6 @@ namespace HomeDishTest
         {
             services.AddControllers();
             services.AddScoped<IBasketCalculationService, BasketCalculationService>();
-            services.AddScoped<IBasketService, HomeDishApiService>();
-
-            ConfigHttpClient(services);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -52,15 +49,6 @@ namespace HomeDishTest
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-            });
-        }
-
-        private void ConfigHttpClient(IServiceCollection services)
-        {
-            var basketApiConfig = Configuration.GetSection(nameof(BasketApiConfig)).Get<BasketApiConfig>();
-            services.AddHttpClient("apiservice", c =>
-            {
-                c.BaseAddress = basketApiConfig.BaseAddress;
             });
         }
     }

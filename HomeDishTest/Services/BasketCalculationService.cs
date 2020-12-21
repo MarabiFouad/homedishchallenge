@@ -11,36 +11,42 @@ namespace HomeDishTest.Services
 {
     public class BasketCalculationService : IBasketCalculationService
     {
+
         public BasketCalculationService()
         {
         }
+
         public double MinimumGrandTotal(Basket basket)
         {
-            
+
             if (basket == null) throw new ApiException("Basket cannot be empty.");
+            
             foreach (var special in basket.Specials)
             {
                 foreach (var specialProduct in special.Products)
                 {
                     var product = basket.Products.FirstOrDefault(x => x.Name == specialProduct.Name);
 
-                    //if special product is included in basket skip the offer
+                    // if special product is not included in basket skip the offer
                     if (product == null) break;
 
-                    //calculate discount for each special product
-                    specialProduct.DisountedPrice = specialProduct.Quantity * product.Price;
+                    // calculate discount for each special product
+                    specialProduct.DisountedPrice = (specialProduct.Quantity) * product.Price;
 
-                    //calculate price with discount for each offer
+                    // calculate price with discount for each offer
                     special.TotalDisountedPrice += specialProduct.DisountedPrice;
-
                 }
-
             }
-            var specialWithMinimumDiscount = basket.Specials.OrderBy(x => x.TotalDisountedPrice).FirstOrDefault();
-            var excludedMiniumSpecialProducts = basket.Products
-                .Where(p => specialWithMinimumDiscount.Products.All(sp => sp.Name != p.Name));
-            var totalPrice = excludedMiniumSpecialProducts.Sum(x => x.Price * x.Quantity);
-            return (totalPrice + specialWithMinimumDiscount.TotalDisountedPrice);
+
+            // select an offer with maximum discount
+            var offerWithMaxDiscount = basket.Specials.OrderByDescending(x => x.TotalDisountedPrice).FirstOrDefault();
+
+            // exclude all product which are in selected offer from basket
+            var excludedProductFromOffer = basket.Products
+                   .Where(p => offerWithMaxDiscount.Products.All(sp => sp.Name != p.Name));
+
+            // sum of all excluded products and maximum discount.
+            return excludedProductFromOffer.Sum(x => x.Quantity * x.Price) + offerWithMaxDiscount.TotalDisountedPrice;
 
         }
     }
