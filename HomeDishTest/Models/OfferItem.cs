@@ -16,5 +16,8 @@ namespace HomeDishTest.Models
         [JsonIgnore]
         public double DisountedPrice { get; set; }
 
+        [JsonIgnore]
+        public int ProductQuantity { get; set; }
+
     }
 }

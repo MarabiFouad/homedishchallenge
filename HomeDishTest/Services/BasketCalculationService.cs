@@ -31,43 +31,41 @@ namespace HomeDishTest.Services
 
             foreach (var special in basket.Specials)
             {
-                var includedProduct = basket.Products
+                var includedProducts = basket.Products
                    .Where(p => special.Products.Any(sp => sp.Name == p.Name));
 
-                var Qties = new Dictionary<string, QuantityValue>(
-                   includedProduct.Select(x => new KeyValuePair<string, QuantityValue>(x.Name, new QuantityValue()
-                   {
-                       Oty = x.Quantity,
-                       ForeseenQty = x.Quantity
-                   }))
-                   );
-                int numOfApplies = 0;
-                while (Qties.All(x => x.Value.ForeseenQty >= 0))
+                foreach (var includedProduct in includedProducts)
                 {
-                    numOfApplies++;
-                    foreach (var qty in Qties)
-                    {
-                        qty.Value.Oty = qty.Value.ForeseenQty;
-                    }
+                    var specialProduct = special.Products.FirstOrDefault(x => x.Name == includedProduct.Name);
+                    specialProduct.ProductQuantity = includedProduct.Quantity;
+                }
+
+                int numOfAppliedOffer = 0;
+                while (!special.Products.Any(x => (x.ProductQuantity / x.Quantity) < 1.0))
+                {
+                    numOfAppliedOffer++;
                     foreach (var specialOffer in special.Products)
                     {
-                        
-                        Qties[specialOffer.Name].ForeseenQty = Qties[specialOffer.Name].Oty - specialOffer.Quantity;
+                        specialOffer.ProductQuantity = specialOffer.ProductQuantity - specialOffer.Quantity;
                     }
-
                 }
                 foreach (var specialOffer in special.Products)
                 {
                     var basketProduct = basket.Products.FirstOrDefault(x => x.Name == specialOffer.Name);
-                    specialOffer.DisountedPrice = (basketProduct.Price * Qties[specialOffer.Name].Oty);
+                    specialOffer.DisountedPrice = (basketProduct.Price * specialOffer.ProductQuantity);
                 }
-                var excludedBasket = basket.Products
+
+                var notIncludeInOfferProducts = basket.Products
                    .Where(p => special.Products.All(sp => sp.Name != p.Name));
 
-                special.TotalDisountedPrice = ((numOfApplies-1) * special.Total) + special.Products.Sum(x => x.DisountedPrice) + excludedBasket.Sum(x => x.Price * x.Quantity);
-
+                special.TotalDisountedPrice =
+                    ((numOfAppliedOffer) * special.Total) +
+                    special.Products.Sum(x => x.DisountedPrice) +
+                    notIncludeInOfferProducts.Sum(x => x.Price * x.Quantity);
 
             }
+
+
             return basket.Specials.Min(x => x.TotalDisountedPrice);
 
         }
