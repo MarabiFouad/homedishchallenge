@@ -19,5 +19,8 @@ namespace HomeDishTest.Models
         [JsonPropertyName("quantity")]
         [Range(0, int.MaxValue, ErrorMessage = "{0} should be a positive number.")]
         public int Quantity { get; set; }
+
+        [JsonIgnore]
+        public int DiscountQuantity { get; set; }
     }
 }

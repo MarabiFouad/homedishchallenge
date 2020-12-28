@@ -9,6 +9,14 @@ using System.Threading.Tasks;
 
 namespace HomeDishTest.Services
 {
+    public class QuantityValue
+    {
+        public int Oty
+        {
+            get; set;
+        }
+        public int ForeseenQty { get; set; }
+    }
     public class BasketCalculationService : IBasketCalculationService
     {
 
@@ -20,33 +28,47 @@ namespace HomeDishTest.Services
         {
 
             if (basket == null) throw new ApiException("Basket cannot be empty.");
-            
+
             foreach (var special in basket.Specials)
             {
-                foreach (var specialProduct in special.Products)
+                var includedProduct = basket.Products
+                   .Where(p => special.Products.Any(sp => sp.Name == p.Name));
+
+                var Qties = new Dictionary<string, QuantityValue>(
+                   includedProduct.Select(x => new KeyValuePair<string, QuantityValue>(x.Name, new QuantityValue()
+                   {
+                       Oty = x.Quantity,
+                       ForeseenQty = x.Quantity
+                   }))
+                   );
+                int numOfApplies = 0;
+                while (Qties.All(x => x.Value.ForeseenQty >= 0))
                 {
-                    var product = basket.Products.FirstOrDefault(x => x.Name == specialProduct.Name);
+                    numOfApplies++;
+                    foreach (var qty in Qties)
+                    {
+                        qty.Value.Oty = qty.Value.ForeseenQty;
+                    }
+                    foreach (var specialOffer in special.Products)
+                    {
+                        
+                        Qties[specialOffer.Name].ForeseenQty = Qties[specialOffer.Name].Oty - specialOffer.Quantity;
+                    }
 
-                    // if special product is not included in basket skip the offer
-                    if (product == null) break;
-
-                    // calculate discount for each special product
-                    specialProduct.DisountedPrice = (specialProduct.Quantity) * product.Price;
-
-                    // calculate price with discount for each offer
-                    special.TotalDisountedPrice += specialProduct.DisountedPrice;
                 }
+                foreach (var specialOffer in special.Products)
+                {
+                    var basketProduct = basket.Products.FirstOrDefault(x => x.Name == specialOffer.Name);
+                    specialOffer.DisountedPrice = (basketProduct.Price * Qties[specialOffer.Name].Oty);
+                }
+                var excludedBasket = basket.Products
+                   .Where(p => special.Products.All(sp => sp.Name != p.Name));
+
+                special.TotalDisountedPrice = ((numOfApplies-1) * special.Total) + special.Products.Sum(x => x.DisountedPrice) + excludedBasket.Sum(x => x.Price * x.Quantity);
+
+
             }
-
-            // select an offer with maximum discount
-            var offerWithMaxDiscount = basket.Specials.OrderByDescending(x => x.TotalDisountedPrice).FirstOrDefault();
-
-            // exclude all product which are in selected offer from basket
-            var excludedProductFromOffer = basket.Products
-                   .Where(p => offerWithMaxDiscount.Products.All(sp => sp.Name != p.Name));
-
-            // sum of all excluded products and maximum discount.
-            return excludedProductFromOffer.Sum(x => x.Quantity * x.Price) + offerWithMaxDiscount.TotalDisountedPrice;
+            return basket.Specials.Min(x => x.TotalDisountedPrice);
 
         }
     }
