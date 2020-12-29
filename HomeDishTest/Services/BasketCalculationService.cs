@@ -34,38 +34,46 @@ namespace HomeDishTest.Services
                 var includedProducts = basket.Products
                    .Where(p => special.Products.Any(sp => sp.Name == p.Name));
 
+                // Calculate the number of division for each offer`s product 
                 foreach (var includedProduct in includedProducts)
                 {
                     var specialProduct = special.Products.FirstOrDefault(x => x.Name == includedProduct.Name);
-                    specialProduct.ProductQuantity = includedProduct.Quantity;
+                    specialProduct.NumOfDivision = includedProduct.Quantity / specialProduct.Quantity;
                 }
 
-                int numOfAppliedOffer = 0;
-                while (!special.Products.Any(x => (x.ProductQuantity / x.Quantity) < 1.0))
+                var minimumNumOfDivision = special.Products.Min(x => x.NumOfDivision);
+
+                // if this offer cannot be applied on the basket continue with the next offer
+                if (minimumNumOfDivision < 1)
+                    continue;
+
+                var numOfApplicableOffer = (int)Math.Floor(minimumNumOfDivision);
+                
+                // Caculate the total price for products of this offer
+                foreach (var specialProduct in special.Products)
                 {
-                    numOfAppliedOffer++;
-                    foreach (var specialOffer in special.Products)
-                    {
-                        specialOffer.ProductQuantity = specialOffer.ProductQuantity - specialOffer.Quantity;
-                    }
-                }
-                foreach (var specialOffer in special.Products)
-                {
-                    var basketProduct = basket.Products.FirstOrDefault(x => x.Name == specialOffer.Name);
-                    specialOffer.DisountedPrice = (basketProduct.Price * specialOffer.ProductQuantity);
+                    var includedProduct = includedProducts.FirstOrDefault(x => x.Name == specialProduct.Name);
+                    
+                    // Calculate deducted quantity 
+                    specialProduct.ProductQuantity = includedProduct.Quantity - (numOfApplicableOffer * specialProduct.Quantity);
+                    
+                    // Store total price for each special product with applied offer
+                    special.TotalDisountedPrice += (specialProduct.ProductQuantity * includedProduct.Price);
                 }
 
-                var notIncludeInOfferProducts = basket.Products
+                // Calculate the total price for products not included in this offer
+                var notIncludedInOfferProducts = basket.Products
                    .Where(p => special.Products.All(sp => sp.Name != p.Name));
 
+                // Sum up offer`s product price with other products in the basket
                 special.TotalDisountedPrice =
-                    ((numOfAppliedOffer) * special.Total) +
-                    special.Products.Sum(x => x.DisountedPrice) +
-                    notIncludeInOfferProducts.Sum(x => x.Price * x.Quantity);
+                    ((numOfApplicableOffer) * special.Total) +
+                    special.TotalDisountedPrice +
+                    notIncludedInOfferProducts.Sum(x => x.Price * x.Quantity);
 
             }
 
-
+            // return the minimum amount
             return basket.Specials.Min(x => x.TotalDisountedPrice);
 
         }
